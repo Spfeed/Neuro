@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-titanic=pd.read_csv(filepath_or_buffer="C:/Users/subba/Desktop/datasets/titanic.csv",
+titanic=pd.read_csv(filepath_or_buffer="datasets/titanic.csv",
             sep=',')
 male=len(titanic[titanic['Sex']=='male'])
 female=len(titanic[titanic['Sex']=='female'])
