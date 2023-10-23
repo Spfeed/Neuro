@@ -1,50 +1,37 @@
 import pandas as pd
-import sklearn.model_selection
-from sklearn.model_selection import KFold, cross_val_score
+from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import scale
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
-# Загрузка данных из файла Wine.csv
-data = pd.read_csv("datasets/wine.data", header=None)
+# Загрузка данных из файла boston.csv
+data = pd.read_csv('datasets/Boston.csv')
 
-# Разделение данных на признаки (X) и классы (y)
-classes = data.iloc[:, 0]
-features = data.iloc[:, 1:]
+# Разделяем данные на признаки (X) и целевую переменную (y)
+X = data.drop(columns=['medv'])
+y = data['medv']
 
-model = RandomForestClassifier(random_state=42)
+# Масштабирование признаков
+X_scaled = scale(X)
 
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
+# Параметры для перебора
+p_values = np.linspace(1, 10, 200)
 
-accuracies = []
+best_p = None
+best_score = float('-inf')
 
-for k in range(1, 51):
-    model = KNeighborsClassifier(n_neighbors=k)
-    scores = cross_val_score(model, features, classes, cv=kf, scoring='accuracy')
-    mean_accuracy = np.mean(scores)
-    accuracies.append(mean_accuracy)
+for p in p_values:
+    # Создаем модель KNeighborsRegressor с текущим значением p
+    model = KNeighborsRegressor(n_neighbors=5, weights='distance', p=p)
 
-best_k = np.argmax(accuracies) + 1  # Прибавляем 1, так как индексы начинаются с 0
-best_accuracy = accuracies[best_k - 1]  # Точность для найденного k
+    # Оцениваем качество с помощью кросс-валидации
+    scores = cross_val_score(model, X_scaled, y, cv=5, scoring='neg_mean_squared_error')
 
-print("Оптимальное занчение k: ", best_k)
-print("Лучшая точность: ", best_accuracy)
+    # Среднее значение показателей качества
+    mean_score = np.mean(scores)
 
-scaled_features = scale(features)#масштабирование характеристик
+    if mean_score > best_score:
+        best_score = mean_score
+        best_p = p
 
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
-
-accuracies = []
-
-for k in range(1, 51):
-    model = KNeighborsClassifier(n_neighbors=k)
-    scores = cross_val_score(model, scaled_features, classes, cv=kf, scoring='accuracy')
-    mean_accuracy = np.mean(scores)
-    accuracies.append(mean_accuracy)
-
-best_k = np.argmax(accuracies) + 1  # Прибавляем 1, так как индексы начинаются с 0
-best_accuracy = accuracies[best_k - 1]  # Точность для найденного k
-
-print("Оптимальное занчение k после масштабирования: ", best_k)
-print("Лучшая точность после масштабирования: " , best_accuracy)
+print("Лучшее значение p:", best_p)
