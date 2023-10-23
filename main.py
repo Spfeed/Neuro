@@ -1,27 +1,35 @@
-import pandas as pd
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
-import matplotlib.pyplot as plt
+from sklearn.model_selection import GridSearchCV, KFold
+import numpy as np
 
-# 1. Загрузка данных из CSV-файла
-data = pd.read_csv('datasets/svm-data.csv')
+newsgroups = fetch_20newsgroups(subset='all', categories=['alt.atheism', 'sci.space'])
 
-# Выделение признаков (X) и целевой переменной (y)
-X = data.iloc[:, 1:]
-y = data.iloc[:, 0]
+# Вычисление TF-IDF признаков для текстов
+tfidf_vectorizer = TfidfVectorizer(max_df=0.5, stop_words='english')
+X = tfidf_vectorizer.fit_transform(newsgroups.data)
 
-# 2. Построение изображения набора данных в виде точек на плоскости
-plt.scatter(X.iloc[:, 0], X.iloc[:, 1], c=y, cmap='spring')
-plt.show()
+# Подбор лучшего параметра C для SVM с линейным ядром с помощью кросс-валидации
+param_grid = {'C': [10 ** i for i in range(-5, 6)]
+}
+svm = SVC(kernel='linear', random_state=241)
+kfold = KFold(n_splits=5, shuffle=True ,random_state=241)
+grid_search = GridSearchCV(svm, param_grid, cv=kfold, scoring='accuracy')
+grid_search.fit(X, newsgroups.target)
+best_C = grid_search.best_params_['C']
 
-# 3. Обучение классификатора с линейным ядром и параметром C = 100000
-svm_classifier = SVC(C=100000, kernel='linear', random_state=241)
-svm_classifier.fit(X, y)
+# Обучение SVM на всей выборке с лучшим параметром C
+svm = SVC(kernel='linear', C=best_C, random_state=241)
+svm.fit(X, newsgroups.target)
 
-# 4. Поиск номеров объектов, которые являются опорными
-support_vector_indices = svm_classifier.support_
-print("Номера опорных объектов:", support_vector_indices)
+# Получение веса признаков
+coef = svm.coef_.toarray()[0]
 
-# 5. Обученная модель для предсказания класса новой точки
-new_point = [[0.8, -0.6]]  # Пример новой точки с двумя числовыми характеристиками
-predicted_class = svm_classifier.predict(new_point)
-print("Предсказанный класс новой точки:", predicted_class)
+# Поиск 10 слов с наибольшими по модулю весами
+top_indices = np.argsort(np.abs(coef))[::-1][:10]
+feature_names = tfidf_vectorizer.get_feature_names_out()
+top_words = [feature_names[i] for i in top_indices]
+
+# Вывод найденнх слов
+print(top_words)
