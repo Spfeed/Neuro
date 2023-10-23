@@ -1,37 +1,39 @@
 import pandas as pd
-from sklearn.model_selection import cross_val_score
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import scale
-import numpy as np
+from sklearn.linear_model import Perceptron
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
 
-# Загрузка данных из файла boston.csv
-data = pd.read_csv('datasets/Boston.csv')
+# Шаг 1: Загрузка обучающей и тестовой выборки
+train_data = pd.read_csv('datasets/perceptron-train.csv', header=None)
+test_data = pd.read_csv('datasets/perceptron-test.csv', header=None)
 
-# Разделяем данные на признаки (X) и целевую переменную (y)
-X = data.drop(columns=['medv'])
-y = data['medv']
+# Определение целевой переменной и признаков
+X_train = train_data.iloc[:, 1:]
+y_train = train_data.iloc[:, 0]
+X_test = test_data.iloc[:, 1:]
+y_test = test_data.iloc[:, 0]
 
-# Масштабирование признаков
-X_scaled = scale(X)
+# Шаг 2: Обучение персептрона со стандартными параметрами
+perceptron = Perceptron(random_state=241)
+perceptron.fit(X_train, y_train)
 
-# Параметры для перебора
-p_values = np.linspace(1, 10, 200)
+# Шаг 3: Подсчет качества на тестовой выборке без нормализации
+y_pred = perceptron.predict(X_test)
+accuracy_before_scaling = accuracy_score(y_test, y_pred)
 
-best_p = None
-best_score = float('-inf')
+# Шаг 4: Нормализация обучающей и тестовой выборки с помощью StandardScaler
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-for p in p_values:
-    # Создаем модель KNeighborsRegressor с текущим значением p
-    model = KNeighborsRegressor(n_neighbors=5, weights='distance', p=p)
+# Шаг 5: Обучение персептрона на новых выборках
+perceptron.fit(X_train_scaled, y_train)
+y_pred_scaled = perceptron.predict(X_test_scaled)
 
-    # Оцениваем качество с помощью кросс-валидации
-    scores = cross_val_score(model, X_scaled, y, cv=5, scoring='neg_mean_squared_error')
+# Шаг 6: Поиск разности до и после нормализации
+accuracy_after_scaling = accuracy_score(y_test, y_pred_scaled)
+accuracy_difference = accuracy_after_scaling - accuracy_before_scaling
 
-    # Среднее значение показателей качества
-    mean_score = np.mean(scores)
-
-    if mean_score > best_score:
-        best_score = mean_score
-        best_p = p
-
-print("Лучшее значение p:", best_p)
+print("Доля правильно классифицированных объектов до нормализации: ", accuracy_before_scaling)
+print("Доля правильно классифицированных объектов после нормализации: ", accuracy_after_scaling)
+print("Разница в доле правильно классифицированных объектов: ", accuracy_difference)
