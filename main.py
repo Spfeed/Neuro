@@ -1,39 +1,36 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.linear_model import Perceptron
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 
-# Шаг 1: Загрузка обучающей и тестовой выборки
-train_data = pd.read_csv('datasets/perceptron-train.csv', header=None)
-test_data = pd.read_csv('datasets/perceptron-test.csv', header=None)
+data = pd.read_csv('datasets/apples_pears.csv')
 
-# Определение целевой переменной и признаков
-X_train = train_data.iloc[:, 1:]
-y_train = train_data.iloc[:, 0]
-X_test = test_data.iloc[:, 1:]
-y_test = test_data.iloc[:, 0]
+# Визуализация данных
+plt.figure(figsize=(10, 8))
+plt.scatter(data.iloc[:, 0], data.iloc[:, 1], c=data['target'], cmap='rainbow')
+plt.title('Яблоки и груши', fontsize=15)
+plt.xlabel('симметричность', fontsize=14)
+plt.ylabel('желтизна', fontsize=14)
+plt.show()
 
-# Шаг 2: Обучение персептрона со стандартными параметрами
+#Выделение матрицы признаков (X) и вектора ответов (y)
+X = data[['symmetry', 'yellowness']]
+y = data['target']
+
+#Создание экземпляра перцептрона
 perceptron = Perceptron(random_state=241)
-perceptron.fit(X_train, y_train)
 
-# Шаг 3: Подсчет качества на тестовой выборке без нормализации
-y_pred = perceptron.predict(X_test)
-accuracy_before_scaling = accuracy_score(y_test, y_pred)
+#Обучение перцептрона
+perceptron.fit(X, y)
 
-# Шаг 4: Нормализация обучающей и тестовой выборки с помощью StandardScaler
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+#Получение предсказаний перцептрона
+y_pred = perceptron.predict(X)
 
-# Шаг 5: Обучение персептрона на новых выборках
-perceptron.fit(X_train_scaled, y_train)
-y_pred_scaled = perceptron.predict(X_test_scaled)
-
-# Шаг 6: Поиск разности до и после нормализации
-accuracy_after_scaling = accuracy_score(y_test, y_pred_scaled)
-accuracy_difference = accuracy_after_scaling - accuracy_before_scaling
-
-print("Доля правильно классифицированных объектов до нормализации: ", accuracy_before_scaling)
-print("Доля правильно классифицированных объектов после нормализации: ", accuracy_after_scaling)
-print("Разница в доле правильно классифицированных объектов: ", accuracy_difference)
+#Построение изображения набора данных "Яблоки-Груши" с учетом результатов классификации
+plt.figure(figsize=(10, 8))
+plt.scatter(data.iloc[:,0], data.iloc[:,1], c=y_pred, cmap='spring')
+plt.title('Яблоки и груши', fontsize=15)
+plt.xlabel('симметричность', fontsize=14)
+plt.ylabel('желтизна', fontsize=14)
+plt.show()
