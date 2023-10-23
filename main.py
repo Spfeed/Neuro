@@ -1,46 +1,50 @@
 import pandas as pd
+import sklearn.model_selection
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.preprocessing import scale
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 import numpy as np
-import sklearn
-from sklearn.tree import DecisionTreeClassifier
 
-#1 задание
-titanic=pd.read_csv(filepath_or_buffer="datasets/titanic.csv",
-            sep=',')
-#5 задние - сразу для удобства исключим пустые значения
-titanic=titanic.dropna()
+# Загрузка данных из файла Wine.csv
+data = pd.read_csv("datasets/wine.data", header=None)
 
-#2 задание
-tit_2=titanic[['Pclass','Fare','Age','Sex']].copy()
+# Разделение данных на признаки (X) и классы (y)
+classes = data.iloc[:, 0]
+features = data.iloc[:, 1:]
 
-#3  задание
-tit_2['Sex']=tit_2['Sex'].replace({'female': 0, 'male': 1})
+model = RandomForestClassifier(random_state=42)
 
-#4 задание
-aim_var=titanic['Survived']
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-#6 задание
-clf=DecisionTreeClassifier(random_state=241)
-clf.fit(tit_2,aim_var)
+accuracies = []
 
-#7 задание
-importances=clf.feature_importances_
-feature_importance_dict = dict(zip(tit_2.columns, importances))
-sorted_feature_importance = sorted(feature_importance_dict.items(), key=lambda x: x[1], reverse=True)
-top_two_features = sorted_feature_importance[:2]
-print("Два признака с наибольшей важностью:")
-for feature, importance in top_two_features:
-    print(f"{feature}: {importance}")
+for k in range(1, 51):
+    model = KNeighborsClassifier(n_neighbors=k)
+    scores = cross_val_score(model, features, classes, cv=kf, scoring='accuracy')
+    mean_accuracy = np.mean(scores)
+    accuracies.append(mean_accuracy)
 
-#8 задание
-person_data={
-    'Pclass': 1,
-    'Fare': 27.7208,
-    'Age': 39,#3 не выживет((((
-    'Sex': 0
-}
-person_df=pd.DataFrame([person_data])
-survival_prediction=clf.predict(person_df)
-if survival_prediction[0]==0:
-    print("Человек не выжил")
-else:
-    print("Человек выжил")
+best_k = np.argmax(accuracies) + 1  # Прибавляем 1, так как индексы начинаются с 0
+best_accuracy = accuracies[best_k - 1]  # Точность для найденного k
+
+print("Оптимальное занчение k: ", best_k)
+print("Лучшая точность: ", best_accuracy)
+
+scaled_features = scale(features)#масштабирование характеристик
+
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+accuracies = []
+
+for k in range(1, 51):
+    model = KNeighborsClassifier(n_neighbors=k)
+    scores = cross_val_score(model, scaled_features, classes, cv=kf, scoring='accuracy')
+    mean_accuracy = np.mean(scores)
+    accuracies.append(mean_accuracy)
+
+best_k = np.argmax(accuracies) + 1  # Прибавляем 1, так как индексы начинаются с 0
+best_accuracy = accuracies[best_k - 1]  # Точность для найденного k
+
+print("Оптимальное занчение k после масштабирования: ", best_k)
+print("Лучшая точность после масштабирования: " , best_accuracy)
