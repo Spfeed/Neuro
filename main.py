@@ -14,11 +14,11 @@ plt.scatter(X.iloc[:, 0], X.iloc[:, 1], c=y, cmap='spring')
 plt.show()
 
 # 3. Обучение классификатора с линейным ядром и параметром C = 100000
-svm_classifier = SVC(C=100000, kernel='linear', random_state=241)
+svm_classifier = SVC(C=100000, kernel='linear', random_state=241) # чем выше C, тем выше точность, ядро - линейное
 svm_classifier.fit(X, y)
 
 # 4. Поиск номеров объектов, которые являются опорными
-support_vector_indices = svm_classifier.support_
+support_vector_indices = svm_classifier.support_ # определение индексов опорных векторов
 print("Номера опорных объектов:", support_vector_indices)
 
 # 5. Обученная модель для предсказания класса новой точки
