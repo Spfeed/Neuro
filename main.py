@@ -8,7 +8,7 @@ data = pd.read_csv('datasets/apples_pears.csv')
 
 # Визуализация данных
 plt.figure(figsize=(10, 8))
-plt.scatter(data.iloc[:, 0], data.iloc[:, 1], c=data['target'], cmap='rainbow')
+plt.scatter(data['symmetry'], data['yellowness'], c=data['target'], cmap='rainbow')
 plt.title('Яблоки и груши', fontsize=15)
 plt.xlabel('симметричность', fontsize=14)
 plt.ylabel('желтизна', fontsize=14)
@@ -29,7 +29,7 @@ y_pred = perceptron.predict(X)
 
 #Построение изображения набора данных "Яблоки-Груши" с учетом результатов классификации
 plt.figure(figsize=(10, 8))
-plt.scatter(data.iloc[:,0], data.iloc[:,1], c=y_pred, cmap='spring')
+plt.scatter(data['symmetry'], data['yellowness'], c=y_pred, cmap='spring')
 plt.title('Яблоки и груши', fontsize=15)
 plt.xlabel('симметричность', fontsize=14)
 plt.ylabel('желтизна', fontsize=14)
