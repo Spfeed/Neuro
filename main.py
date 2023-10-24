@@ -7,7 +7,7 @@ import numpy as np
 newsgroups = fetch_20newsgroups(subset='all', categories=['alt.atheism', 'sci.space'])
 
 # Вычисление TF-IDF признаков для текстов
-tfidf_vectorizer = TfidfVectorizer(max_df=0.5, stop_words='english')
+tfidf_vectorizer = TfidfVectorizer(max_df=0.5, stop_words='english') # Преобразование в числовые признаки, методом TF-IDF
 X = tfidf_vectorizer.fit_transform(newsgroups.data)
 
 # Подбор лучшего параметра C для SVM с линейным ядром с помощью кросс-валидации
