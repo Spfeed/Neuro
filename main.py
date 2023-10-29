@@ -2,68 +2,75 @@ import torch
 from torch.nn import Linear, Sigmoid, ReLU
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Загрузка данных из CSV-файла
-data = pd.read_csv('datasets/apples_pears.csv')
-X = data[['symmetry', 'yellowness']].values
-y = data['target'].values
+N = 100
+D = 2
+K = 3
+X = np.zeros((N * K, D))
+y = np.zeros(N * K, dtype='uint8')
+for j in range(K):
+    ix = range(N * j,N * (j + 1))
+    r = np.linspace(0.0, 1, N)
+    t = np.linspace(j * 4, (j + 1) * 4,N) + np.random.randn(N) * 0.2 # theta
+    X[ix] = np.c_[r * np.sin(t), r * np.cos(t)]
+    y[ix] = j
 
-# Построение изображения набора данных
 plt.figure(figsize=(10, 8))
-plt.scatter(data['symmetry'], data['yellowness'], c=data['target'], cmap='spring')
-plt.title('Яблоки и груши', fontsize=15)
-plt.xlabel('симметричность', fontsize=14)
-plt.ylabel('желтизна', fontsize= 14)
+plt.scatter(X[:, 0], X[:, 1], c=y, s=40, cmap=plt.cm.rainbow)
+plt.title('Спираль', fontsize=15)
+plt.xlabel('$x$', fontsize=14)
+plt.ylabel('$y$', fontsize=14)
 plt.show()
 
-num_features = X.shape[1]
-
-neuron = torch.nn.Sequential(Linear(num_features, out_features=1),Sigmoid())
-
-neuron(torch.autograd.Variable(torch.FloatTensor([1, 1])))
-
-proba_pred = neuron(torch.autograd.Variable(torch.FloatTensor(X)))
-y_pred = proba_pred > 0.5
-y_pred = y_pred.data.numpy().reshape(-1)
-
-plt.figure(figsize=(10, 8))
-plt.scatter(data['symmetry'], data['yellowness'], c=y_pred, cmap='spring')
-plt.title('Яблоки и груши', fontsize=15)
-plt.xlabel('симметричность', fontsize=14)
-plt.ylabel('желтизна', fontsize=14)
-plt.show();
-
 X = torch.autograd.Variable(torch.FloatTensor(X))
-y = torch.autograd.Variable(torch.FloatTensor(y))
+y = torch.autograd.Variable(torch.LongTensor(y.astype(np.int64)))
+print(X.data.shape, y.data.shape)
 
-# квадратичная функция потерь (можно сделать другую, например, LogLoss)
-loss_fn = torch.nn.MSELoss(reduction='mean')
-# шаг градиентного спуска (точнее -- метода оптимизации)
-learning_rate = 0.07 # == 1e-3
-# сам метод оптимизации нейросети (обычно лучше всего по-умолчанию работает Adam)
+# N - размер батча (batch_size, нужно для метода оптимизации)
+# D_in - размерность входа (количество признаков у объекта)
+# D_out - размерность выходного слоя (суть -- количество классов)
+N, D_in, D_out = 64, 2, 3
+neuron = torch.nn.Sequential(
+torch.nn.Linear(D_in, D_out),
+)
+loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
+learning_rate = 1e-4
 optimizer = torch.optim.SGD(neuron.parameters(), lr=learning_rate)
-# количество итераций в градиентном спуске равно num_epochs, здесь 500
-for t in range(700):
-    # forward_pass() -- применение нейросети (этот шаг ещё называют inference)
+
+for t in range(500):
+    # forward
     y_pred = neuron(X)
-    y=y.reshape(-1,1)
-    # выведем loss
-    loss = loss_fn(y_pred, y.view(-1))
+    # loss
+    loss = loss_fn(y_pred, y).sum()
     print('{} {}'.format(t, loss.data))
-    # обнуляем градиенты перед backard_pass'ом (обязательно!)
+    # зануляем градиенты с предыдущего шага
     optimizer.zero_grad()
-    # backward_pass() -- вычисляем градиенты loss'а по параметрам (весам) нейросети
-    # этой командой мы только вычисляем градиенты, но ещё не обновляем веса
+    # backward
     loss.backward()
-    # а тут уже обновляем веса
+    # обновляем веса
+
     optimizer.step()
 
-proba_pred = neuron(X)
-y_pred = proba_pred > 0.5
-y_pred = y_pred.data.numpy().reshape(-1)
+# Обратно в Numpy для отрисовки
+X = X.data.numpy()
+y = y.data.numpy()
+h = 0.02
+x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+np.arange(y_min, y_max, h))
+grid_tensor = torch.FloatTensor(np.c_[xx.ravel(), yy.ravel()])
+Z = neuron(torch.autograd.Variable(grid_tensor))
+Z = Z.data.numpy()
+Z = np.argmax(Z, axis=1)
+Z = Z.reshape(xx.shape)
 plt.figure(figsize=(10, 8))
-plt.scatter(data['symmetry'], data['yellowness'], c=y_pred, cmap='spring')
-plt.title('Яблоки и груши', fontsize=15)
-plt.xlabel('симметричность', fontsize=14)
-plt.ylabel('желтизна', fontsize=14)
+plt.contourf(xx, yy, Z, cmap=plt.cm.rainbow, alpha=0.3)
+plt.scatter(X[:, 0], X[:, 1], c=y, s=40, cmap=plt.cm.rainbow)
+plt.xlim(xx.min(), xx.max())
+plt.ylim(yy.min(), yy.max())
+plt.title('Спираль', fontsize=15)
+plt.xlabel('$x$', fontsize=14)
+plt.ylabel('$y$', fontsize=14)
 plt.show();
