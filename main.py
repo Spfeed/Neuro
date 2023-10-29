@@ -1,49 +1,7 @@
-from Perceptron import Perceptron
-import numpy as np
-from sklearn.linear_model import Perceptron as perp
+import torch
+from torch.nn import Linear, Sigmoid, ReLU
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-
-"""
-w = np.array([1., 2.]).reshape(2, 1)
-b = 2
-X = np.array([[1., 2., -1.], [3., 4., -3.2]])
-
-
-perceptron = Perceptron(w, b)
-y_pred = perceptron.forward_pass(X)
-print("Forward Pass:")
-print(y_pred)
-
-
-y = np.array([1, 0, 1]).reshape(3, 1)
-
-
-perceptron.backward_pass(X, y, y_pred)
-print("Backward Pass:")
-print("Updated Weights (w):")
-print(perceptron.w)
-print("Updated Bias (b):")
-print(perceptron.b)
-
-w = np.array([1., 2.]).reshape(1, -1)
-b = 2
-
-perceptron1=perp(max_iter=1000, tol=1e-3, fit_intercept=True)
-
-
-# Сравнение с реализацией Scicit-learn
-
-X = np.array([[1., 2., -1.], [3., 4., -3.2]])
-y = np.array([1, 0, 1])
-perceptron1.fit(X.T, y)
-
-y_pred = perceptron1.predict(X.T)
-
-print(perceptron1.intercept_)
-
-"""
 
 # Загрузка данных из CSV-файла
 data = pd.read_csv('datasets/apples_pears.csv')
@@ -52,37 +10,60 @@ y = data['target'].values
 
 # Построение изображения набора данных
 plt.figure(figsize=(10, 8))
-plt.scatter(data['symmetry'], data['yellowness'], c=data['target'], cmap='rainbow')
+plt.scatter(data['symmetry'], data['yellowness'], c=data['target'], cmap='spring')
 plt.title('Яблоки и груши', fontsize=15)
 plt.xlabel('симметричность', fontsize=14)
 plt.ylabel('желтизна', fontsize= 14)
 plt.show()
 
-print("Форма X:", X.shape)
-print("Форма y:", y.shape)
+num_features = X.shape[1]
 
-# Создание и обучение собственного перцептрона
-perceptron = Perceptron()
-losses = perceptron.fit(X, y, num_epochs=300)
+neuron = torch.nn.Sequential(Linear(num_features, out_features=1),Sigmoid())
 
-# График функции потерь
-plt.figure(figsize=(10, 8))
-plt.plot(range(1, len(losses) + 1), losses, marker='o')
-plt.title('График функции потерь', fontsize=15)
-plt.xlabel('Эпохи', fontsize=14)
-plt.ylabel('Функция потерь', fontsize=14)
-plt.show()
+neuron(torch.autograd.Variable(torch.FloatTensor([1, 1])))
 
-# Построение изображения набора данных с учетом результатов классификации
-y_pred = perceptron.forward_pass(X)
+proba_pred = neuron(torch.autograd.Variable(torch.FloatTensor(X)))
+y_pred = proba_pred > 0.5
+y_pred = y_pred.data.numpy().reshape(-1)
+
 plt.figure(figsize=(10, 8))
 plt.scatter(data['symmetry'], data['yellowness'], c=y_pred, cmap='spring')
-plt.title('Яблоки и груши (результат классификации)', fontsize=15)
+plt.title('Яблоки и груши', fontsize=15)
 plt.xlabel('симметричность', fontsize=14)
 plt.ylabel('желтизна', fontsize=14)
-plt.show()
+plt.show();
 
+X = torch.autograd.Variable(torch.FloatTensor(X))
+y = torch.autograd.Variable(torch.FloatTensor(y))
 
+# квадратичная функция потерь (можно сделать другую, например, LogLoss)
+loss_fn = torch.nn.MSELoss(reduction='mean')
+# шаг градиентного спуска (точнее -- метода оптимизации)
+learning_rate = 0.07 # == 1e-3
+# сам метод оптимизации нейросети (обычно лучше всего по-умолчанию работает Adam)
+optimizer = torch.optim.SGD(neuron.parameters(), lr=learning_rate)
+# количество итераций в градиентном спуске равно num_epochs, здесь 500
+for t in range(700):
+    # forward_pass() -- применение нейросети (этот шаг ещё называют inference)
+    y_pred = neuron(X)
+    y=y.reshape(-1,1)
+    # выведем loss
+    loss = loss_fn(y_pred, y.view(-1))
+    print('{} {}'.format(t, loss.data))
+    # обнуляем градиенты перед backard_pass'ом (обязательно!)
+    optimizer.zero_grad()
+    # backward_pass() -- вычисляем градиенты loss'а по параметрам (весам) нейросети
+    # этой командой мы только вычисляем градиенты, но ещё не обновляем веса
+    loss.backward()
+    # а тут уже обновляем веса
+    optimizer.step()
 
-
-
+proba_pred = neuron(X)
+y_pred = proba_pred > 0.5
+y_pred = y_pred.data.numpy().reshape(-1)
+plt.figure(figsize=(10, 8))
+plt.scatter(data['symmetry'], data['yellowness'], c=y_pred, cmap='spring')
+plt.title('Яблоки и груши', fontsize=15)
+plt.xlabel('симметричность', fontsize=14)
+plt.ylabel('желтизна', fontsize=14)
+plt.show();
