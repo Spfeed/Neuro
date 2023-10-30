@@ -4,9 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-N = 100
-D = 2
-K = 3
+N = 100 #Количество точек
+D = 2#Количество признаков
+K = 3#Количество классов
 X = np.zeros((N * K, D))
 y = np.zeros(N * K, dtype='uint8')
 for j in range(K):
