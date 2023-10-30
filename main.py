@@ -37,19 +37,20 @@ X = torch.autograd.Variable(torch.FloatTensor(X))
 y = torch.autograd.Variable(torch.FloatTensor(y))
 
 # квадратичная функция потерь (можно сделать другую, например, LogLoss)
-loss_fn = torch.nn.MSELoss(reduction='mean')
+loss_fn = torch.nn.MSELoss(reduction='none')
 # шаг градиентного спуска (точнее -- метода оптимизации)
-learning_rate = 0.07 # == 1e-3
+learning_rate = 0.053
 # сам метод оптимизации нейросети (обычно лучше всего по-умолчанию работает Adam)
 optimizer = torch.optim.SGD(neuron.parameters(), lr=learning_rate)
 # количество итераций в градиентном спуске равно num_epochs, здесь 500
-for t in range(700):
+for t in range(10000):
     # forward_pass() -- применение нейросети (этот шаг ещё называют inference)
     y_pred = neuron(X)
     y=y.reshape(-1,1)
     # выведем loss
-    loss = loss_fn(y_pred, y.view(-1))
-    print('{} {}'.format(t, loss.data))
+    loss = loss_fn(y_pred, y).sum()
+    if t<=9999 and t>9989:
+        print('{} {}'.format(t, loss.data))
     # обнуляем градиенты перед backard_pass'ом (обязательно!)
     optimizer.zero_grad()
     # backward_pass() -- вычисляем градиенты loss'а по параметрам (весам) нейросети
